@@ -1,0 +1,435 @@
+<div class="section">
+  <header>
+    <h2>Événements</h2>
+    <div class="filters">
+      <button class="ghost" [class.active]="upcoming()" (click)="toggleUpcoming(true)">À venir</button>
+      <button *ngIf="isAdmin()" class="ghost" [class.active]="!upcoming()" (click)="toggleUpcoming(false)">Tous</button>
+      <button class="ghost" (click)="refresh()" [disabled]="loading()">Actualiser</button>
+      <button *ngIf="isAdmin()" class="primary icon-btn" (click)="openCreateDialog()" title="Créer un événement">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+        Créer un événement
+      </button>
+    </div>
+  </header>
+
+  <p class="error" *ngIf="error()">{{ error() }}</p>
+  <p class="message" *ngIf="message()">{{ message() }}</p>
+
+  <div class="list">
+    <div class="item" *ngFor="let event of events()">
+      <div>
+        <p class="title">{{ event.name }}</p>
+        <p class="muted">Format {{ event.format }} • Statut {{ getStatusLabel(event.status) }}</p>
+        <p class="muted">{{ event.description }}</p>
+        <p class="muted" *ngIf="locationLabel(event) === 'En ligne'">
+          Lieu : En ligne
+        </p>
+        <p class="muted" *ngIf="locationLabel(event) !== 'En ligne'">
+          Lieu : {{ locationLabel(event) }}
+          <a *ngIf="mapsLink(event)" [href]="mapsLink(event)" target="_blank" rel="noopener">Voir sur Maps</a>
+        </p>
+      </div>
+      <div class="right">
+        <p class="muted">Débute le {{ event.startDate | date:'short' }}</p>
+        <p class="pill">Inscriptions {{ event.registrationStartDate | date:'shortDate' }} → {{ event.registrationEndDate | date:'shortDate' }}</p>
+        <div class="item-actions" *ngIf="isAdmin()">
+          <button 
+            class="ghost small" 
+            (click)="openEditDialog(event)" 
+            title="Modifier l'événement"
+            [disabled]="event.status === 'in_progress'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+            Modifier
+          </button>
+          <button 
+            class="ghost small" 
+            (click)="generateBracket(event._id)" 
+            title="Générer/Régénérer le bracket"
+            [disabled]="generatingBracket() === event._id">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            {{ generatingBracket() === event._id ? 'Génération...' : 'Générer bracket' }}
+          </button>
+          <button class="ghost small danger" (click)="deleteEvent(event._id)" title="Supprimer l'événement">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
+    <p class="muted" *ngIf="!events().length">Aucun événement.</p>
+  </div>
+</div>
+
+<!-- Dialog de création d'événement -->
+<div class="overlay" *ngIf="showCreateDialog()" (click)="closeCreateDialog()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+      </svg>
+      <h3>Créer un nouvel événement</h3>
+    </div>
+    
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+    <p class="message" *ngIf="message()">{{ message() }}</p>
+
+    <div class="form">
+      <div class="form-section">
+        <h4>Informations générales</h4>
+        <label>
+          <span>Nom de l'événement *</span>
+          <input 
+            type="text" 
+            [ngModel]="form().name" 
+            (ngModelChange)="updateForm({ name: $any($event) })"
+            placeholder="Ex: Tournoi Valorant 2024"
+            autofocus
+          />
+        </label>
+        <div class="form-row">
+          <label>
+            <span>Jeu *</span>
+            <select [ngModel]="form().game" (ngModelChange)="updateForm({ game: $any($event), format: '' })">
+              <option value="">Sélectionner un jeu...</option>
+              <option *ngFor="let game of games()" [value]="game._id">{{ game.name }}</option>
+            </select>
+          </label>
+          <label>
+            <span>Format *</span>
+            <select [ngModel]="form().format" (ngModelChange)="updateForm({ format: $any($event) })" [disabled]="!form().game">
+              <option value="">Sélectionner un format...</option>
+              <option *ngFor="let format of getSelectedGameFormats()" [value]="format">{{ format }}</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          <span>Description</span>
+          <textarea 
+            [ngModel]="form().description" 
+            (ngModelChange)="updateForm({ description: $any($event) })"
+            placeholder="Description de l'événement..."
+            rows="3"
+          ></textarea>
+        </label>
+        <label>
+          <span>Règles</span>
+          <textarea 
+            [ngModel]="form().rules" 
+            (ngModelChange)="updateForm({ rules: $any($event) })"
+            placeholder="Règles spécifiques de l'événement..."
+            rows="3"
+          ></textarea>
+        </label>
+        <label>
+          <span>Nombre maximum d'équipes</span>
+          <input 
+            type="number" 
+            min="2" 
+            [ngModel]="form().maxTeams" 
+            (ngModelChange)="updateForm({ maxTeams: $any($event) })"
+            placeholder="Ex: 8, 16, 32"
+          />
+          <small class="hint">Laisser vide pour illimité</small>
+        </label>
+      </div>
+
+      <div class="form-section">
+        <h4>Lieu</h4>
+        <label>
+          <span>Type de lieu *</span>
+          <select [ngModel]="form().locationType" (ngModelChange)="updateForm({ locationType: $any($event) })">
+            <option value="online">🌐 En ligne</option>
+            <option value="physical">📍 En présentiel</option>
+          </select>
+        </label>
+        <div *ngIf="form().locationType === 'physical'" class="physical-location">
+          <label>
+            <span>Adresse</span>
+            <input 
+              type="text" 
+              [ngModel]="form().address" 
+              (ngModelChange)="updateForm({ address: $any($event) })"
+              placeholder="Ex: 123 Rue Example, Montréal, QC"
+            />
+          </label>
+          <div class="form-row">
+            <label>
+              <span>Latitude</span>
+              <input 
+                type="number" 
+                step="0.0001" 
+                [ngModel]="form().latitude" 
+                (ngModelChange)="updateForm({ latitude: $any($event) })"
+                placeholder="45.5017"
+              />
+            </label>
+            <label>
+              <span>Longitude</span>
+              <input 
+                type="number" 
+                step="0.0001" 
+                [ngModel]="form().longitude" 
+                (ngModelChange)="updateForm({ longitude: $any($event) })"
+                placeholder="-73.5673"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Dates d'inscription</h4>
+        <div class="form-row">
+          <label>
+            <span>Début *</span>
+            <input 
+              type="datetime-local" 
+              [ngModel]="form().registrationStartDate" 
+              (ngModelChange)="updateForm({ registrationStartDate: $any($event) })"
+            />
+          </label>
+          <label>
+            <span>Fin *</span>
+            <input 
+              type="datetime-local" 
+              [ngModel]="form().registrationEndDate" 
+              (ngModelChange)="updateForm({ registrationEndDate: $any($event) })"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Dates de l'événement</h4>
+        <div class="form-row">
+          <label>
+            <span>Début *</span>
+            <input 
+              type="datetime-local" 
+              [ngModel]="form().startDate" 
+              (ngModelChange)="updateForm({ startDate: $any($event) })"
+            />
+          </label>
+          <label>
+            <span>Fin *</span>
+            <input 
+              type="datetime-local" 
+              [ngModel]="form().endDate" 
+              (ngModelChange)="updateForm({ endDate: $any($event) })"
+            />
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button class="ghost" (click)="closeCreateDialog()" [disabled]="creating()">Annuler</button>
+      <button class="primary" (click)="createEvent()" [disabled]="creating() || !form().name || !form().game || !form().format || !form().startDate || !form().endDate || !form().registrationStartDate || !form().registrationEndDate">
+        <svg *ngIf="!creating()" width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+        {{ creating() ? 'Création...' : 'Créer l\'événement' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog de modification d'événement -->
+<div class="overlay" *ngIf="showEditDialog()" (click)="closeEditDialog()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+      <h3>Modifier l'événement</h3>
+    </div>
+    
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+    <p class="message" *ngIf="message()">{{ message() }}</p>
+
+    <div class="form">
+      <div class="form-section">
+        <h4>Informations générales</h4>
+        <label>
+          <span>Nom de l'événement *</span>
+          <input 
+            type="text" 
+            [ngModel]="form().name" 
+            (ngModelChange)="updateForm({ name: $any($event) })"
+            placeholder="Ex: Tournoi Valorant 2024"
+          />
+        </label>
+        <div class="form-row">
+          <label>
+            <span>Jeu *</span>
+            <select [ngModel]="form().game" (ngModelChange)="updateForm({ game: $any($event), format: '' })">
+              <option value="">Sélectionner un jeu...</option>
+              <option *ngFor="let game of games()" [value]="game._id">{{ game.name }}</option>
+            </select>
+          </label>
+          <label>
+            <span>Format *</span>
+            <select [ngModel]="form().format" (ngModelChange)="updateForm({ format: $any($event) })" [disabled]="!form().game">
+              <option value="">Sélectionner un format...</option>
+              <option *ngFor="let format of getSelectedGameFormats()" [value]="format">{{ format }}</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          <span>Description</span>
+          <textarea 
+            [ngModel]="form().description" 
+            (ngModelChange)="updateForm({ description: $any($event) })"
+            placeholder="Description de l'événement..."
+            rows="3"
+          ></textarea>
+        </label>
+        <label>
+          <span>Règles</span>
+          <textarea 
+            [ngModel]="form().rules" 
+            (ngModelChange)="updateForm({ rules: $any($event) })"
+            placeholder="Règles spécifiques de l'événement..."
+            rows="3"
+          ></textarea>
+        </label>
+        <label>
+          <span>Nombre maximum d'équipes</span>
+          <input 
+            type="number" 
+            min="2" 
+            [ngModel]="form().maxTeams" 
+            (ngModelChange)="updateForm({ maxTeams: $any($event) })"
+            placeholder="Ex: 8, 16, 32"
+          />
+          <small class="hint">Laisser vide pour illimité</small>
+        </label>
+      </div>
+
+      <div class="form-section">
+        <h4>Lieu</h4>
+        <label>
+          <span>Type de lieu *</span>
+          <select [ngModel]="form().locationType" (ngModelChange)="updateForm({ locationType: $any($event) })">
+            <option value="online">🌐 En ligne</option>
+            <option value="physical">📍 En présentiel</option>
+          </select>
+        </label>
+        <div *ngIf="form().locationType === 'physical'" class="physical-location">
+          <label>
+            <span>Adresse</span>
+            <input 
+              type="text" 
+              [ngModel]="form().address" 
+              (ngModelChange)="updateForm({ address: $any($event) })"
+              placeholder="Ex: 123 Rue Example, Montréal, QC"
+            />
+          </label>
+          <div class="form-row">
+            <label>
+              <span>Latitude</span>
+              <input 
+                type="number" 
+                step="0.0001" 
+                [ngModel]="form().latitude" 
+                (ngModelChange)="updateForm({ latitude: $any($event) })"
+                placeholder="45.5017"
+              />
+            </label>
+            <label>
+              <span>Longitude</span>
+              <input 
+                type="number" 
+                step="0.0001" 
+                [ngModel]="form().longitude" 
+                (ngModelChange)="updateForm({ longitude: $any($event) })"
+                placeholder="-73.5673"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Dates d'inscription</h4>
+        <div class="form-row">
+          <label>
+            <span>Début *</span>
+            <input 
+              type="datetime-local" 
+              [ngModel]="form().registrationStartDate" 
+              (ngModelChange)="updateForm({ registrationStartDate: $any($event) })"
+            />
+          </label>
+          <label>
+            <span>Fin *</span>
+            <input 
+              type="datetime-local" 
+              [ngModel]="form().registrationEndDate" 
+              (ngModelChange)="updateForm({ registrationEndDate: $any($event) })"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4>Dates de l'événement</h4>
+        <div class="form-row">
+          <label>
+            <span>Début *</span>
+            <input 
+              type="datetime-local" 
+              [ngModel]="form().startDate" 
+              (ngModelChange)="updateForm({ startDate: $any($event) })"
+            />
+          </label>
+          <label>
+            <span>Fin *</span>
+            <input 
+              type="datetime-local" 
+              [ngModel]="form().endDate" 
+              (ngModelChange)="updateForm({ endDate: $any($event) })"
+            />
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button class="ghost" (click)="closeEditDialog()" [disabled]="updating()">Annuler</button>
+      <button class="primary" (click)="updateEvent()" [disabled]="updating() || !form().name || !form().game || !form().format || !form().startDate || !form().endDate || !form().registrationStartDate || !form().registrationEndDate">
+        <svg *ngIf="!updating()" width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+        {{ updating() ? 'Mise à jour...' : 'Mettre à jour' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog de confirmation de suppression -->
+<div class="overlay" *ngIf="deleteConfirmId()" (click)="cancelDelete()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="warning-icon">
+        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+      <h3>Supprimer l'événement</h3>
+    </div>
+    <p>Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.</p>
+    <div class="dialog-actions">
+      <button class="ghost" (click)="cancelDelete()" [disabled]="loading()">Annuler</button>
+      <button class="primary danger" (click)="confirmDelete()" [disabled]="loading()">
+        {{ loading() ? 'Suppression...' : 'Supprimer' }}
+      </button>
+    </div>
+  </div>
+</div>

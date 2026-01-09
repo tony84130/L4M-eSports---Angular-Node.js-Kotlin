@@ -1,0 +1,126 @@
+<div class="login-page">
+  <div class="glow glow--pink"></div>
+  <div class="glow glow--blue"></div>
+
+  <div class="card">
+    <div class="card__header">
+      <p class="eyebrow">L4M Esports</p>
+      <h1>Inscription</h1>
+      <p class="subtitle">
+        Crée ton compte, rejoins des équipes et participe aux tournois.
+      </p>
+    </div>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="grid">
+        <label class="field">
+          <span>Prénom</span>
+          <div class="input-wrapper" [class.input-wrapper--error]="firstNameControl.invalid && firstNameControl.touched">
+            <input
+              type="text"
+              formControlName="firstName"
+              placeholder="Jane"
+              autocomplete="given-name"
+            />
+          </div>
+          <p class="field__error" *ngIf="firstNameControl.invalid && firstNameControl.touched">
+            Prénom requis (min. 2 caractères).
+          </p>
+        </label>
+
+        <label class="field">
+          <span>Nom</span>
+          <div class="input-wrapper" [class.input-wrapper--error]="lastNameControl.invalid && lastNameControl.touched">
+            <input
+              type="text"
+              formControlName="lastName"
+              placeholder="Doe"
+              autocomplete="family-name"
+            />
+          </div>
+          <p class="field__error" *ngIf="lastNameControl.invalid && lastNameControl.touched">
+            Nom requis (min. 2 caractères).
+          </p>
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Gamertag</span>
+        <div class="input-wrapper" [class.input-wrapper--error]="gamertagControl.invalid && gamertagControl.touched">
+          <input
+            type="text"
+            formControlName="gamertag"
+            placeholder="ShadowFox"
+            autocomplete="nickname"
+          />
+        </div>
+        <p class="field__error" *ngIf="gamertagControl.invalid && gamertagControl.touched">
+          2 à 30 caractères.
+        </p>
+      </label>
+
+      <label class="field">
+        <span>Email</span>
+        <div class="input-wrapper" [class.input-wrapper--error]="emailControl.invalid && emailControl.touched">
+          <input
+            type="email"
+            formControlName="email"
+            placeholder="joueur@exemple.com"
+            autocomplete="email"
+          />
+        </div>
+        <p class="field__error" *ngIf="emailControl.invalid && emailControl.touched">
+          Merci de saisir un email valide.
+        </p>
+      </label>
+
+      <label class="field">
+        <span>Mot de passe</span>
+        <div class="input-wrapper input-wrapper--password" [class.input-wrapper--error]="passwordControl.invalid && passwordControl.touched">
+          <input
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          />
+          <button type="button" class="ghost-btn" (click)="togglePasswordVisibility()">
+            {{ hidePassword() ? 'Afficher' : 'Masquer' }}
+          </button>
+        </div>
+        <p class="field__error" *ngIf="passwordControl.invalid && passwordControl.touched">
+          6 caractères minimum.
+        </p>
+      </label>
+
+      <label class="field">
+        <span>Username Twitch (optionnel)</span>
+        <div class="input-wrapper">
+          <input
+            type="text"
+            formControlName="twitchUsername"
+            placeholder="@streamer"
+            autocomplete="off"
+          />
+        </div>
+      </label>
+
+      <label class="remember">
+        <input type="checkbox" formControlName="rememberMe" />
+        <span>Rester connecté</span>
+      </label>
+
+      <button class="primary-btn" type="submit" [disabled]="loading()">
+        <span class="spinner" *ngIf="loading()"></span>
+        <span>{{ loading() ? 'Création...' : 'Créer mon compte' }}</span>
+      </button>
+
+      <p class="alert alert--error" *ngIf="error()">{{ error() }}</p>
+      <p class="alert alert--success" *ngIf="success()">{{ success() }}</p>
+    </form>
+
+    <div class="card__footer">
+      <p>Déjà un compte ? <a routerLink="/">Se connecter</a></p>
+      <p class="hint">Crée un seul compte, utilisable web + mobile.</p>
+    </div>
+  </div>
+</div>

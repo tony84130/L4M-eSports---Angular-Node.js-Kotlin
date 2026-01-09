@@ -1,0 +1,50 @@
+<div class="section">
+  <header>
+    <div>
+      <p class="eyebrow">Vue d'ensemble</p>
+      <h2>Bienvenue sur L4M Esports</h2>
+    </div>
+    <button class="ghost" (click)="refresh()" [disabled]="loading()">Actualiser</button>
+  </header>
+
+  <div class="cards">
+    <div class="card">
+      <p class="label">Jeux actifs</p>
+      <p class="value">{{ games().length }}</p>
+    </div>
+    <div class="card">
+      <p class="label">Événements à venir</p>
+      <p class="value">{{ events().length }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Événements à venir</h3>
+  <div class="list">
+    <div class="item" *ngFor="let event of events()">
+      <div>
+        <p class="title">{{ event.name }}</p>
+        <p class="muted">Format {{ event.format }} • Statut {{ event.status }}</p>
+      </div>
+      <p class="muted">
+        Inscription {{ event.registrationStartDate | date:'shortDate' }} → {{ event.registrationEndDate | date:'shortDate' }}
+      </p>
+    </div>
+    <p class="muted" *ngIf="!events().length">Aucun événement à venir.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Jeux</h3>
+  <div class="list">
+    <div class="item" *ngFor="let game of games()">
+      <div>
+        <p class="title">{{ game.name }}</p>
+        <p class="muted">{{ game.description }}</p>
+      </div>
+      <p class="pill" *ngIf="game.formats?.length">{{ (game.formats || []).join(' / ') }}</p>
+    </div>
+    <p class="muted" *ngIf="!games().length">Aucun jeu actif.</p>
+  </div>
+</div>

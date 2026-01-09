@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  redis-project-session:
+    image: redis:7-alpine
+    container_name: redis-project-session
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - l4m-esports-network
+
+volumes:
+  redis-data:
+
+networks:
+  l4m-esports-network:
+    driver: bridge
+

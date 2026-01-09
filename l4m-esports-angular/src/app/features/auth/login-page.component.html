@@ -1,0 +1,67 @@
+<div class="login-page">
+  <div class="glow glow--pink"></div>
+  <div class="glow glow--blue"></div>
+
+  <div class="card">
+    <div class="card__header">
+      <p class="eyebrow">L4M Esports</p>
+      <h1>Connexion</h1>
+      <p class="subtitle">
+        Rejoins ta team, suis tes matchs et reste au courant des tournois.
+      </p>
+    </div>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label class="field">
+        <span>Email</span>
+        <div class="input-wrapper" [class.input-wrapper--error]="emailControl.invalid && emailControl.touched">
+          <input
+            type="email"
+            formControlName="email"
+            placeholder="joueur@exemple.com"
+            autocomplete="email"
+          />
+        </div>
+        <p class="field__error" *ngIf="emailControl.invalid && emailControl.touched">
+          Merci de saisir un email valide.
+        </p>
+      </label>
+
+      <label class="field">
+        <span>Mot de passe</span>
+        <div class="input-wrapper input-wrapper--password" [class.input-wrapper--error]="passwordControl.invalid && passwordControl.touched">
+          <input
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
+          <button type="button" class="ghost-btn" (click)="togglePasswordVisibility()">
+            {{ hidePassword() ? 'Afficher' : 'Masquer' }}
+          </button>
+        </div>
+        <p class="field__error" *ngIf="passwordControl.invalid && passwordControl.touched">
+          6 caractères minimum.
+        </p>
+      </label>
+
+      <label class="remember">
+        <input type="checkbox" formControlName="rememberMe" />
+        <span>Rester connecté</span>
+      </label>
+
+      <button class="primary-btn" type="submit" [disabled]="loading()">
+        <span class="spinner" *ngIf="loading()"></span>
+        <span>{{ loading() ? 'Connexion...' : 'Se connecter' }}</span>
+      </button>
+
+      <p class="alert alert--error" *ngIf="error()">{{ error() }}</p>
+      <p class="alert alert--success" *ngIf="success()">{{ success() }}</p>
+    </form>
+
+    <div class="card__footer">
+      <p>Pas encore de compte ? <a routerLink="/sign-up">Créer un compte</a></p>
+      <p class="hint">Utilise le même compte que sur l'app mobile.</p>
+    </div>
+  </div>
+</div>

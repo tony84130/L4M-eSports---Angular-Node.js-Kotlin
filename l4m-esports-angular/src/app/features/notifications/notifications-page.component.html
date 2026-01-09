@@ -1,0 +1,22 @@
+<div class="section">
+  <header>
+    <h2>Notifications</h2>
+    <div class="actions">
+      <button class="ghost" (click)="refresh()" [disabled]="loading()">Actualiser</button>
+      <button class="primary" (click)="markAll()">Tout marquer lu</button>
+    </div>
+  </header>
+
+  <p class="muted" *ngIf="message()">{{ message() }}</p>
+
+  <div class="list">
+    <div class="item" *ngFor="let notif of notifications()">
+      <div>
+        <p class="title">{{ notif.title || notif.type }}</p>
+        <p class="muted">{{ notif.message }}</p>
+      </div>
+      <p class="muted">{{ notif.createdAt | date:'short' }}</p>
+    </div>
+    <p class="muted" *ngIf="!notifications().length">Aucune notification.</p>
+  </div>
+</div>

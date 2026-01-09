@@ -1,0 +1,177 @@
+<div class="section">
+  <header>
+    <h2>Équipes</h2>
+    <div class="actions">
+      <button class="ghost" (click)="refresh()" [disabled]="loading()">Actualiser</button>
+      <button 
+        *ngIf="canCreateTeam()" 
+        class="primary icon-btn create-team-btn" 
+        (click)="openCreateDialog()" 
+        title="Créer une équipe">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+        Créer une équipe
+      </button>
+    </div>
+  </header>
+
+  <p class="error" *ngIf="error()">{{ error() }}</p>
+  <p class="message" *ngIf="message()">{{ message() }}</p>
+
+  <div class="list">
+    <div class="item" *ngFor="let team of teams()">
+      <div>
+        <p class="title">{{ team.name }}</p>
+        <p class="muted">{{ team.description }}</p>
+        <p class="muted">Jeu : {{ displayGameName(team.game) }}</p>
+        <p class="muted">Capitaine : {{ getCaptainName(team) }}</p>
+        <p class="muted" *ngIf="team.members.length > 0">
+          Membres : {{ team.members.length }} ({{ getOtherMembers(team).length }} autres membres)
+        </p>
+      </div>
+      <div class="item-actions">
+        <p class="pill">Statut {{ team.status }}</p>
+        <button 
+          *ngIf="isCaptain(team) && getOtherMembers(team).length > 0"
+          class="ghost small" 
+          (click)="openTransferDialog(team)"
+          title="Transférer le rôle de capitaine">
+          Transférer capitaine
+        </button>
+        <button 
+          *ngIf="canDeleteTeam(team)"
+          class="ghost small danger" 
+          (click)="deleteTeam(team)"
+          title="Dissoudre l'équipe">
+          Dissoudre
+        </button>
+      </div>
+    </div>
+    <p class="muted" *ngIf="!teams().length && !loading()">Aucune équipe.</p>
+    <p class="muted" *ngIf="loading()">Chargement...</p>
+  </div>
+</div>
+
+<!-- Dialog de création d'équipe -->
+<div class="overlay" *ngIf="showCreateDialog()" (click)="closeCreateDialog()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+      </svg>
+      <h3>Créer une équipe</h3>
+    </div>
+    
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+    <p class="message" *ngIf="message()">{{ message() }}</p>
+
+    <div class="form">
+      <label>
+        <span>Nom de l'équipe *</span>
+        <input 
+          type="text" 
+          [ngModel]="form().name" 
+          (ngModelChange)="updateForm({ name: $any($event) })"
+          placeholder="Ex: Les Champions"
+          autofocus
+        />
+      </label>
+      
+      <label>
+        <span>Jeu *</span>
+        <select 
+          [ngModel]="form().game" 
+          (ngModelChange)="updateForm({ game: $any($event) })"
+          [disabled]="getAvailableGames().length === 0">
+          <option value="">Sélectionner un jeu...</option>
+          <option *ngFor="let game of getAvailableGames()" [value]="game._id">{{ game.name }}</option>
+        </select>
+        <p class="hint" *ngIf="getAvailableGames().length === 0">
+          ⚠️ Vous êtes déjà capitaine ou membre d'une équipe pour tous les jeux disponibles
+        </p>
+        <p class="hint" *ngIf="getAvailableGames().length > 0">
+          Seuls les jeux pour lesquels vous n'êtes pas déjà capitaine ou membre sont affichés
+        </p>
+      </label>
+      
+      <label>
+        <span>Description (optionnel)</span>
+        <textarea 
+          [ngModel]="form().description" 
+          (ngModelChange)="updateForm({ description: $any($event) })"
+          placeholder="Description de l'équipe..."
+          rows="3"
+        ></textarea>
+      </label>
+      
+      <label>
+        <span>URL du logo (optionnel)</span>
+        <input 
+          type="text" 
+          [ngModel]="form().logo" 
+          (ngModelChange)="updateForm({ logo: $any($event) })"
+          placeholder="Ex: https://example.com/logo.png"
+        />
+      </label>
+      
+      <label>
+        <span>Nombre maximum de membres (optionnel)</span>
+        <input 
+          type="number" 
+          min="1" 
+          [ngModel]="form().maxMembers" 
+          (ngModelChange)="updateForm({ maxMembers: $any($event) })"
+          placeholder="Laisser vide pour utiliser la valeur par défaut du jeu"
+        />
+        <small class="hint">Laisser vide pour utiliser la valeur par défaut du jeu</small>
+      </label>
+    </div>
+
+    <div class="dialog-actions">
+      <button class="ghost" (click)="closeCreateDialog()" [disabled]="creating()">Annuler</button>
+      <button 
+        class="primary" 
+        (click)="createTeam()" 
+        [disabled]="creating() || !form().name || !form().game || getAvailableGames().length === 0">
+        <svg *ngIf="!creating()" width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+        {{ creating() ? 'Création...' : 'Créer l\'équipe' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog de transfert de capitaine -->
+<div class="overlay" *ngIf="showTransferDialog()" (click)="closeTransferDialog()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <h3>Transférer le rôle de capitaine</h3>
+    <p>Sélectionnez un membre pour devenir le nouveau capitaine :</p>
+    <div class="members-list" *ngIf="selectedTeam()">
+      <div 
+        *ngFor="let member of getOtherMembers(selectedTeam()!)" 
+        class="member-item"
+        (click)="selectedNewCaptainId.set(getMemberId(member))">
+        <input 
+          type="radio" 
+          [checked]="selectedNewCaptainId() === getMemberId(member)"
+          (click)="$event.stopPropagation()"
+          (change)="selectedNewCaptainId.set(getMemberId(member))">
+        <span>{{ getMemberName(member) }}</span>
+      </div>
+      <p class="muted" *ngIf="getOtherMembers(selectedTeam()!).length === 0">
+        Aucun autre membre disponible
+      </p>
+    </div>
+    <div class="dialog-actions">
+      <button class="ghost" (click)="closeTransferDialog()">Annuler</button>
+      <button 
+        class="primary" 
+        (click)="transferCaptain()" 
+        [disabled]="!selectedNewCaptainId() || transferring() || getOtherMembers(selectedTeam()!).length === 0">
+        {{ transferring() ? 'Transfert...' : 'Transférer' }}
+      </button>
+    </div>
+  </div>
+</div>

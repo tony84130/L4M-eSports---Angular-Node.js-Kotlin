@@ -1,0 +1,75 @@
+<div class="section">
+  <header>
+    <h2>Utilisateurs</h2>
+    <div class="actions">
+      <button class="ghost" (click)="refresh()" [disabled]="loading()" title="Actualiser">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+        Actualiser
+      </button>
+    </div>
+  </header>
+
+  <p class="muted" *ngIf="message()">{{ message() }}</p>
+  <p class="error" *ngIf="message() && message()!.includes('Erreur')">{{ message() }}</p>
+  <p class="success" *ngIf="message() && !message()!.includes('Erreur')">{{ message() }}</p>
+
+  <div class="list" *ngIf="!loading()">
+    <div class="item" *ngFor="let user of users()">
+      <div class="user-info">
+        <div class="user-avatar">
+          {{ (user.firstName || user.gamertag || user.email || '?').charAt(0).toUpperCase() }}
+        </div>
+        <div class="user-details">
+          <p class="title">{{ user.firstName }} {{ user.lastName }}</p>
+          <p class="muted">{{ user.email }}</p>
+          <div class="user-meta">
+            <span class="badge">{{ user.gamertag }}</span>
+            <span class="role-badge" [class.role-admin]="user.role === 'admin'" 
+                  [class.role-captain]="user.role === 'captain'" 
+                  [class.role-member]="user.role === 'member'">
+              {{ user.role }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <button 
+        class="delete-btn" 
+        (click)="deleteUser(user._id)"
+        [disabled]="isCurrentUser(user)"
+        *ngIf="!isCurrentUser(user)"
+        title="Supprimer l'utilisateur">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+        </svg>
+      </button>
+    </div>
+    <p class="muted empty" *ngIf="!users().length">Aucun utilisateur.</p>
+  </div>
+
+  <div *ngIf="loading()" class="loading">
+    <div class="spinner"></div>
+    <p>Chargement...</p>
+  </div>
+</div>
+
+<!-- Dialog de confirmation -->
+<div class="overlay" *ngIf="deleteConfirmId()" (click)="cancelDelete()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-icon danger">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+    </div>
+    <h3>Supprimer l'utilisateur</h3>
+    <p>Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible et toutes les données associées seront perdues.</p>
+    <div class="dialog-actions">
+      <button class="ghost" (click)="cancelDelete()">Annuler</button>
+      <button class="primary danger" (click)="confirmDelete()" [disabled]="loading()">
+        {{ loading() ? 'Suppression...' : 'Supprimer' }}
+      </button>
+    </div>
+  </div>
+</div>
+

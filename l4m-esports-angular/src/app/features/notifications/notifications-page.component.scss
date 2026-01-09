@@ -1,0 +1,16 @@
+@import '../dashboard/dashboard-page.component.scss';
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.primary {
+  background: linear-gradient(90deg, #f472b6 0%, #ec4899 50%, #6d6afc 100%);
+  border: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: #0c0f1a;
+  font-weight: 700;
+  cursor: pointer;
+}

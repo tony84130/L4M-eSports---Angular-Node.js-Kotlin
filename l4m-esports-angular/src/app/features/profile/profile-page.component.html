@@ -1,0 +1,39 @@
+<div class="section" *ngIf="user(); else loadingTpl">
+  <h2>Profil</h2>
+  <div class="info">
+    <p><strong>Nom :</strong> {{ user()?.firstName }} {{ user()?.lastName }}</p>
+    <p><strong>Gamertag :</strong> {{ user()?.gamertag }}</p>
+    <p><strong>Email :</strong> {{ user()?.email }}</p>
+    <p><strong>Rôle :</strong> {{ user()?.role }}</p>
+    <p><strong>Twitch :</strong> {{ user()?.twitchUsername || '—' }}</p>
+  </div>
+
+  <div class="twitch">
+    <h3>Lier un compte Twitch</h3>
+    <div class="row">
+      <input
+        type="text"
+        placeholder="username Twitch"
+        [(ngModel)]="twitchInput"
+      />
+      <button class="ghost" (click)="fetchTwitch()">Tester</button>
+      <button class="primary" (click)="saveTwitch()" [disabled]="saving()">Sauvegarder</button>
+    </div>
+    <p class="muted" *ngIf="twitchMessage()">{{ twitchMessage() }}</p>
+    <div class="preview" *ngIf="twitchPreview() as twitch">
+      <div class="avatar" *ngIf="twitch.profile_image_url">
+        <img [src]="twitch.profile_image_url" alt="twitch avatar" />
+      </div>
+      <div>
+        <p class="title">{{ twitch.display_name }}</p>
+        <p class="muted">{{ twitch.description }}</p>
+        <p class="muted">Viewers: {{ twitch.view_count }} | Followers: {{ twitch.followers }}</p>
+        <p class="muted">Live: {{ twitch.is_live ? 'Oui' : 'Non' }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingTpl>
+  <p class="muted">Chargement...</p>
+</ng-template>

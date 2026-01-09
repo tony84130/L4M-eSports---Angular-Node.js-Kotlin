@@ -1,0 +1,202 @@
+<div class="section">
+  <header>
+    <h2>Matchs</h2>
+    <button class="ghost" (click)="refresh()" [disabled]="loading()">Actualiser</button>
+  </header>
+
+  <div class="filters">
+    <button
+      class="ghost"
+      *ngFor="let filter of statusFilters"
+      [class.active]="selectedStatus() === filter.key"
+      (click)="selectStatus(filter.key)"
+      [disabled]="loading()"
+    >
+      {{ filter.label }}
+    </button>
+  </div>
+
+  <p class="muted" *ngIf="message()">{{ message() }}</p>
+  <p class="error" *ngIf="error()">{{ error() }}</p>
+
+  <div class="list">
+    <div class="item" *ngFor="let match of matches()">
+      <div>
+        <p class="title">{{ teamsLabel(match) }}</p>
+        <p class="muted">Événement : {{ eventLabel(match) }}</p>
+        <p class="muted">Planifié : {{ match.scheduledTime | date:'short' }}</p>
+        <p class="muted" *ngIf="match.score">
+          Score : {{ match.score.team1 }} - {{ match.score.team2 }}
+        </p>
+      </div>
+      <div class="item-actions">
+        <p class="pill status" [ngClass]="match.status">{{ statusLabel(match.status) }}</p>
+        <button *ngIf="isAdmin()" class="ghost small" (click)="openStatusDialog(match); $event.stopPropagation()" title="Modifier le statut">
+          Statut
+        </button>
+        <button 
+          *ngIf="isAdmin() && match.status === 'in_progress'" 
+          class="ghost small" 
+          (click)="openScoreDialog(match); $event.stopPropagation()" 
+          title="Modifier le score">
+          Score
+        </button>
+        <button 
+          *ngIf="isAdmin() && match.status === 'pending_validation'" 
+          class="ghost small primary" 
+          (click)="openValidateDialog(match); $event.stopPropagation()" 
+          title="Valider le match">
+          Valider
+        </button>
+      </div>
+    </div>
+    <p class="muted" *ngIf="!matches().length && !loading()">Aucun match.</p>
+    <p class="muted" *ngIf="loading()">Chargement...</p>
+  </div>
+</div>
+
+<!-- Dialog de modification de statut -->
+<div class="overlay" *ngIf="showStatusDialog()" (click)="closeStatusDialog()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+      <h3>Modifier le statut</h3>
+    </div>
+    
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+    <p class="message" *ngIf="message()">{{ message() }}</p>
+
+    <div class="match-info" *ngIf="selectedMatch()">
+      <p class="match-teams">{{ teamsLabel(selectedMatch()!) }}</p>
+      <p class="match-event">Événement : {{ eventLabel(selectedMatch()!) }}</p>
+    </div>
+
+    <div class="form">
+      <div class="status-options">
+        <label class="status-option" *ngFor="let status of getAvailableStatuses()">
+          <input 
+            type="radio" 
+            name="status" 
+            [value]="status"
+            [checked]="newStatus() === status"
+            (change)="newStatus.set(status)"
+          />
+          <span>{{ getStatusLabel(status) }}</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button class="ghost" (click)="closeStatusDialog()" [disabled]="editing()">Annuler</button>
+      <button class="primary" (click)="updateMatchStatus()" [disabled]="editing()">
+        <svg *ngIf="!editing()" width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+        {{ editing() ? 'Mise à jour...' : 'Confirmer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog de modification de score -->
+<div class="overlay" *ngIf="showScoreDialog()" (click)="closeScoreDialog()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+      <h3>Modifier le score</h3>
+    </div>
+    
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+    <p class="message" *ngIf="message()">{{ message() }}</p>
+
+    <div class="match-info" *ngIf="selectedMatch()">
+      <p class="match-teams">{{ teamsLabel(selectedMatch()!) }}</p>
+      <p class="match-event">Événement : {{ eventLabel(selectedMatch()!) }}</p>
+    </div>
+
+    <div class="form">
+      <div class="form-section">
+        <h4>Score</h4>
+        <div class="score-inputs">
+          <div class="score-input-group">
+            <label>
+              <span>Équipe 1</span>
+              <input 
+                type="number" 
+                min="0" 
+                [ngModel]="scoreTeam1()" 
+                (ngModelChange)="scoreTeam1.set($any($event))"
+                placeholder="0"
+              />
+            </label>
+          </div>
+          <div class="score-separator">VS</div>
+          <div class="score-input-group">
+            <label>
+              <span>Équipe 2</span>
+              <input 
+                type="number" 
+                min="0" 
+                [ngModel]="scoreTeam2()" 
+                (ngModelChange)="scoreTeam2.set($any($event))"
+                placeholder="0"
+              />
+            </label>
+          </div>
+        </div>
+        <p class="hint">
+          ⚠️ En modifiant le score, le match passera automatiquement au statut "À valider"
+        </p>
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button class="ghost" (click)="closeScoreDialog()" [disabled]="editing()">Annuler</button>
+      <button class="primary" (click)="updateMatchScore()" [disabled]="editing()">
+        <svg *ngIf="!editing()" width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+        {{ editing() ? 'Mise à jour...' : 'Confirmer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dialog de validation de match -->
+<div class="overlay" *ngIf="showValidateDialog()" (click)="closeValidateDialog()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+      </svg>
+      <h3>Valider le résultat du match</h3>
+    </div>
+    
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+    <p class="message" *ngIf="message()">{{ message() }}</p>
+
+    <div class="match-info" *ngIf="selectedMatch()">
+      <p class="match-teams">{{ teamsLabel(selectedMatch()!) }}</p>
+      <p class="match-event">Événement : {{ eventLabel(selectedMatch()!) }}</p>
+      <p class="match-score" *ngIf="selectedMatch()?.score">
+        Score : {{ selectedMatch()!.score!.team1 }} - {{ selectedMatch()!.score!.team2 }}
+      </p>
+    </div>
+
+    <p>Êtes-vous sûr de vouloir valider ce résultat ? Cette action est irréversible.</p>
+
+    <div class="dialog-actions">
+      <button class="ghost" (click)="closeValidateDialog()" [disabled]="validating()">Annuler</button>
+      <button class="primary" (click)="validateMatch()" [disabled]="validating()">
+        <svg *ngIf="!validating()" width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+        {{ validating() ? 'Validation...' : 'Valider' }}
+      </button>
+    </div>
+  </div>
+</div>

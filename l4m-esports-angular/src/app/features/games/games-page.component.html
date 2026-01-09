@@ -1,0 +1,89 @@
+<div class="section">
+  <header>
+    <h2>Jeux actifs</h2>
+    <div class="actions">
+      <button class="ghost" (click)="refresh()" [disabled]="loading()">Actualiser</button>
+      <button *ngIf="isAdmin()" class="primary" (click)="openCreateDialog()" title="Créer un jeu">
+        Créer un jeu
+      </button>
+    </div>
+  </header>
+
+  <div class="list">
+    <div class="item" *ngFor="let game of games()">
+      <div>
+        <p class="title">{{ game.name }}</p>
+        <p class="muted">{{ game.description }}</p>
+      </div>
+      <p class="pill" *ngIf="game.formats?.length">{{ (game.formats || []).join(' / ') }}</p>
+    </div>
+    <p class="muted" *ngIf="!games().length">Aucun jeu.</p>
+  </div>
+</div>
+
+<!-- Dialog de création de jeu -->
+<div class="overlay" *ngIf="showCreateDialog()" (click)="closeCreateDialog()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <h3>Créer un nouveau jeu</h3>
+    
+    <p class="error" *ngIf="error()">{{ error() }}</p>
+    <p class="muted" *ngIf="message()">{{ message() }}</p>
+
+    <div class="form">
+      <label>
+        <span>Nom *</span>
+        <input 
+          type="text" 
+          [ngModel]="form().name" 
+          (ngModelChange)="updateForm({ name: $any($event) })"
+          placeholder="Ex: Valorant"
+          autofocus
+        />
+      </label>
+      <label>
+        <span>Description</span>
+        <textarea 
+          [ngModel]="form().description" 
+          (ngModelChange)="updateForm({ description: $any($event) })"
+          placeholder="Description du jeu..."
+          rows="3"
+        ></textarea>
+      </label>
+      <label>
+        <span>Logo (URL)</span>
+        <input 
+          type="url" 
+          [ngModel]="form().logo" 
+          (ngModelChange)="updateForm({ logo: $any($event) })"
+          placeholder="https://example.com/logo.png"
+        />
+      </label>
+      <label>
+        <span>Règles</span>
+        <textarea 
+          [ngModel]="form().rules" 
+          (ngModelChange)="updateForm({ rules: $any($event) })"
+          placeholder="Règles du jeu..."
+          rows="4"
+        ></textarea>
+      </label>
+      <label>
+        <span>Formats</span>
+        <input 
+          type="text" 
+          [ngModel]="form().formats" 
+          (ngModelChange)="updateForm({ formats: $any($event) })"
+          placeholder="Ex: 5v5, 3v3, 1v1"
+        />
+        <small class="muted">Séparés par des virgules</small>
+      </label>
+    </div>
+
+    <div class="dialog-actions">
+      <button class="ghost" (click)="closeCreateDialog()" [disabled]="creating()">Annuler</button>
+      <button class="primary" (click)="createGame()" [disabled]="creating() || !form().name.trim()">
+        {{ creating() ? 'Création...' : 'Créer' }}
+      </button>
+    </div>
+  </div>
+</div>

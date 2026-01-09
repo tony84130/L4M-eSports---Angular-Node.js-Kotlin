@@ -1,0 +1,37 @@
+<div class="ai-widget">
+  <button class="fab" (click)="toggle()">
+    {{ isOpen ? 'Fermer' : 'Aide IA' }}
+  </button>
+
+  <div class="panel" *ngIf="isOpen">
+    <header>
+      <div>
+        <p class="eyebrow">Assistant</p>
+        <h4>Besoin d'aide ?</h4>
+      </div>
+      <button class="icon-btn" (click)="toggle()" aria-label="Fermer l'assistant">✕</button>
+    </header>
+
+    <label for="ai-question">Ta question</label>
+    <textarea
+      id="ai-question"
+      rows="3"
+      [(ngModel)]="questionText"
+      placeholder="Ex: Comment inscrire mon équipe à un événement ?"
+    ></textarea>
+
+    <div class="actions">
+      <button class="ghost" (click)="toggle()">Annuler</button>
+      <button class="primary" (click)="ask()" [disabled]="loading">
+        {{ loading ? 'Envoi...' : 'Envoyer' }}
+      </button>
+    </div>
+
+    <p class="muted" *ngIf="loading">L'assistant prépare une réponse...</p>
+    <p class="error" *ngIf="error">{{ error }}</p>
+
+    <div class="answer" *ngIf="!loading && answer">
+      <p>{{ answer }}</p>
+    </div>
+  </div>
+</div>

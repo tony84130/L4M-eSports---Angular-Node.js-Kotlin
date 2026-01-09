@@ -1,0 +1,62 @@
+@import '../dashboard/dashboard-page.component.scss';
+
+.info p {
+  margin: 6px 0;
+}
+
+.twitch {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  color: #e5e7eb;
+  min-width: 220px;
+}
+
+.primary {
+  background: linear-gradient(90deg, #f472b6 0%, #ec4899 50%, #6d6afc 100%);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #0c0f1a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.preview {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.preview .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.title {
+  margin: 0;
+  font-weight: 700;
+}
